@@ -17,5 +17,4 @@ export class AppComponent implements OnInit {
     window.addEventListener('online', () => this.isOnline = true);
     window.addEventListener('offline', () => this.isOnline = false);
   }
-
 }

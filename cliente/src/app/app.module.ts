@@ -30,39 +30,52 @@ import { DividerModule } from 'primeng/divider';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 
+
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { InicioComponent } from './components/inicio/inicio.component';
-import { HeaderComponent } from './components/Shared/layout/header/header.component';
-import { LegalesComponent } from './components/Shared/legales/legales.component';
-import { FooterComponent } from './components/Shared/layout/footer/footer.component';
-import { BaucherPipe } from './pipes/baucher.pipe';
-import { RecorridoAgendaComponent } from './components/Coordinadoras/recorrido-agenda/recorrido-agenda.component';
-import { EjecutivasComponent } from './components/Shared/ejecutivas/ejecutivas.component';
-import { DepositosComponent } from './components/Shared/depositos/depositos.component';
-import { BauchersComponent } from './components/Shared/bauchers/bauchers.component';
-import { ReporteFichasComponent } from './components/reporte-fichas/reporte-fichas.component';
-import { FechaFormatPipe } from './pipes/fecha-format.pipe';
-import { AgendasComponent } from './components/Coordinadoras/agendas/agendas.component';
-import { ReporteAgendasComponent } from './components/Coordinadoras/reporte-agendas/reporte-agendas.component';
-import { IniciarSesionComponent } from './components/Shared/iniciar-sesion/iniciar-sesion.component';
-import { ProyeccionesComponent } from './components/Shared/proyecciones/proyecciones.component';
-import { SeguimientoProyeccionesComponent } from './components/Shared/seguimiento-proyecciones/seguimiento-proyecciones.component';
-import { DirSegProyeccionComponent } from './components/Shared/dir-seg-proyeccion/dir-seg-proyeccion.component';
-import { CumplimientoAgendaComponent } from './components/Shared/cumplimiento-agenda/cumplimiento-agenda.component';
-import { SubirAgendaComponent } from './components/Coordinadoras/subir-agenda/subir-agenda.component';
-import { ActividadPipe } from './pipes/actividad.pipe';
-import { MiAgendaComponent } from './components/Coordinadoras/mi-agenda/mi-agenda.component';
-import { TokenInterceptor } from './interceptors/token.interceptor';
-import { FichasAsesorComponent } from './components/Shared/fichas-asesor/fichas-asesor.component';
-import { TestComponent } from './components/registrar-agenda-asesor/test.component';
-import { TestAgendaComponent } from './components/test-agenda/test-agenda.component';
-import { TruncatePipe } from './pipes/truncate.pipe';
-import { SidebarComponent } from './components/Shared/layout/sidebar/sidebar.component';
-import { Error404Component } from './components/Shared/error404/error404.component';
-import { ListarAgendaComponent } from './components/agenda-admin/listar-agenda/listar-agenda.component';
-import { RegistrarAgendaAdminComponent } from './components/agenda-admin/registrar-agenda/registrar-agenda.component';
-import { ListarTodaAgendasComponent } from './components/admin/listar-toda-agendas/listar-toda-agendas.component';
+import { HeaderComponent } from './components/layout/header/header.component';
+import { FechaFormatPipe } from './components/pipes/fecha-format.pipe';
+import { ActividadPipe } from './components/pipes/actividad.pipe';
+import { TokenInterceptor } from './core/interceptors/token.interceptor';
+import { TruncatePipe } from './components/pipes/truncate.pipe';
+
+
+// PUBLIC ROUTES
+import { InicioComponent } from './features/public/inicio/inicio.component';
+import { Error404Component } from './features/public/error404/error404.component';
+import { IniciarSesionComponent } from './features/public/iniciar-sesion/iniciar-sesion.component';
+
+// IMPORTS ROUTES ADMIN
+import { ListarAgendaComponent } from './features/admin/listar-agenda/listar-agenda.component';
+import { RegistrarAgendaAdminComponent } from './features/admin/registrar-agenda/registrar-agenda.component';
+import { ListarTodaAgendasComponent } from './features/admin/listar-toda-agendas/listar-toda-agendas.component';
+
+// IMPORT ROUTES ASESORES
+import { RegistrarAgendaAsesorComponent } from './features/asesor/registrar-agenda-asesor/registrar-agenda-asesor.component';
+import { ListarAgendaAsesorComponent } from './features/asesor/listar-agenda-asesor/listar-agenda-asesor.component';
+import { FichasAsesorComponent } from './features/asesor/fichas-asesor/fichas-asesor.component';
+
+// IMPORT ROUTES COORDINADORES
+import { MiAgendaComponent } from './features/coordinador/mi-agenda/mi-agenda.component';
+
+
+// IMPORT ROUTES SUPERVISOR
+import { AgendasComponent } from './features/coordinador/registrar-agenda-coordinador/registrar-agenda-coordinador.component';
+import { SubirAgendaComponent } from './features/supervisor/coordinador/subir-agenda/subir-agenda.component';
+import { LegalesComponent } from './features/coordinador/legales/legales.component';
+import { FooterComponent } from './components/layout/footer/footer.component';
+import { BaucherPipe } from './components/pipes/baucher.pipe';
+import { RecorridoAgendaComponent } from './features/supervisor/coordinador/recorrido-agenda/recorrido-agenda.component';
+import { EjecutivasComponent } from './features/supervisor/ejecutivas/ejecutivas/ejecutivas.component';
+import { DepositosComponent } from './features/supervisor/ejecutivas/depositos/depositos.component';
+import { BauchersComponent } from './features/supervisor/ejecutivas/bauchers/bauchers.component';
+import { ReporteFichasComponent } from './features/supervisor/asesores/reporte-fichas/reporte-fichas.component';
+import { ReporteAgendasComponent } from './features/supervisor/coordinador/reporte-agendas/reporte-agendas.component';
+import { ProyeccionesComponent } from './features/supervisor/coordinador/proyecciones/proyecciones.component';
+import { SeguimientoProyeccionesComponent } from './features/supervisor/asesores/seguimiento-proyecciones/seguimiento-proyecciones.component';
+import { DirSegProyeccionComponent } from './features/supervisor/asesores/dir-seg-proyeccion/dir-seg-proyeccion.component';
+import { CumplimientoAgendaComponent } from './features/supervisor/coordinador/cumplimiento-agenda/cumplimiento-agenda.component';
+
 
 registerLocaleData(localeEs);
 
@@ -108,10 +121,9 @@ const MyPreset = definePreset(Aura, {
     ActividadPipe,
     MiAgendaComponent,
     FichasAsesorComponent,
-    TestComponent,
-    TestAgendaComponent,
+    RegistrarAgendaAsesorComponent,
+    ListarAgendaAsesorComponent,
     TruncatePipe,
-    SidebarComponent,
     Error404Component,
     ListarAgendaComponent,
     RegistrarAgendaAdminComponent,
@@ -168,5 +180,3 @@ const MyPreset = definePreset(Aura, {
   bootstrap: [AppComponent]
 })
 export class AppModule { }
-
-

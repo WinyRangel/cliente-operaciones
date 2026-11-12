@@ -1,0 +1,355 @@
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { AbstractControl, FormArray, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { CoordinacionService } from '../../../../core/services/coordinador/coordinacion.service';
+import { Coordinacion } from '../../../../core/models/coordinacion';
+import { Agenda, Domicilio } from '../../../../core/models/agenda';
+import Swal from 'sweetalert2';
+import { horaLaboralValidator } from '../../../coordinador/registrar-agenda-coordinador/registrar-agenda-coordinador.component';
+import { AuthService } from '../../../../core/services/auth/auth.service';
+import { FormsModule } from '@angular/forms';
+import { AutoCompleteModule } from 'primeng/autocomplete';
+import { CardModule } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
+import { TagModule } from 'primeng/tag';
+import { MessageModule } from 'primeng/message';
+import { ToastModule } from 'primeng/toast';
+import { CheckboxModule } from 'primeng/checkbox';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { FieldsetModule } from 'primeng/fieldset';
+import { ListboxModule } from 'primeng/listbox';
+// Constantes para evitar "magic numbers/strings"
+const RENDIMIENTO_POR_DEFECTO = 13;
+const SEMANAS_ANIO = 53;
+@Component({
+  selector: 'app-registrar-agenda',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    AutoCompleteModule,
+    CardModule,
+    ButtonModule,
+    SelectModule,
+    TagModule,
+    MessageModule,
+    ToastModule,
+    CheckboxModule,
+    DatePickerModule,
+    ToggleSwitchModule,
+    SelectButtonModule,
+    InputTextModule,
+    TextareaModule,
+    FieldsetModule,
+    ListboxModule
+  ],
+  templateUrl: './registrar-agenda.component.html',
+  styleUrl: './registrar-agenda.component.css'
+})
+export class RegistrarAgendaComponent {
+  coordinacion: string[] = [];
+
+
+  //Variables para agenda
+  registrarAgenda: FormGroup;
+  coordinaciones: Coordinacion[] = [];
+  agendas: any[] = []; // Lista completa de agendas
+
+  //
+  selectedCoord: Coordinacion | null = null;
+  coordinadorVisible: string = ''; // por defecto
+  coordinadorSeleccionado: string = '';
+  //
+  selectedObjetivos: string[] = [];
+  semanas: string[] = [];
+  totalKm: number = 0;
+  precioPorLitro: number = 0;
+  domicilios: string[] = ["NA"];
+  rendimientosCoordinadores: { [nombre: string]: number } = {};
+  selectedCode: string[] = [];
+
+
+  meses: string[] = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  diasSemana: string[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  loading: boolean = false;
+  fechaActual: Date = new Date();
+  trasladoOptions = [
+    { label: 'Sí', value: 'SI' },
+    { label: 'No', value: 'NO' }
+  ];
+
+  constructor(
+    private fb: FormBuilder,
+    private _coordinacionService: CoordinacionService,
+    private authService: AuthService) {
+    this.registrarAgenda = this.initForm();
+    this.generateWeeks();
+  }
+
+  fixUTCDateToLocal(dateStr: string): Date {
+    const date = new Date(dateStr);
+    return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  }
+
+
+  ngOnInit(): void {
+    this.loadCoordinaciones();
+    this.loadDomicilios();
+    // this.setupFormListeners();
+    this._coordinacionService.obtenerCoordinacion().subscribe(data => {
+      this.coordinaciones = data;
+    });
+
+  }
+
+
+  private initForm(): FormGroup {
+    const coordinadorLogueado = this.authService.getUsuario();
+
+    return this.fb.group({
+      coordinador: [coordinadorLogueado || '', Validators.required],
+      semana: ['', Validators.required],
+      fecha: ['', Validators.required],
+      objetivo: [''],
+      meta: [''],
+      cumplimientoAgenda: [false],
+      actividades: this.fb.array([this.crearActividad()])
+    });
+  }
+
+
+
+
+  private generateWeeks(): void {
+    this.semanas = Array.from({ length: SEMANAS_ANIO },
+      (_, i) => `SEMANA ${i + 1}`);
+  }
+
+  // Cargar datos iniciales
+  private loadCoordinaciones(): void {
+    this._coordinacionService.obtenerCoordinacion().subscribe(data => {
+      this.coordinaciones = data;
+      this.setRendimientos(data);
+    });
+  }
+
+
+  private loadDomicilios(): void {
+    this._coordinacionService.getDomicilios().subscribe((res: Domicilio[]) => {
+      this.domicilios = res.map(d => d.nombre);
+    });
+  }
+
+  private setRendimientos(coordinaciones: Coordinacion[]): void {
+    this.rendimientosCoordinadores = coordinaciones.reduce((acc, coord) => {
+      acc[coord.coordinador] = coord.rendimiento ?? RENDIMIENTO_POR_DEFECTO;
+      return acc;
+    }, {} as { [nombre: string]: number });
+  }
+
+
+  // Configurar listeners del formulario
+  // private setupFormListeners(): void {
+  //   this.registrarAgenda.get('traslado')?.valueChanges.subscribe(value => {
+  //     const kmControl = this.registrarAgenda.get('kmRecorrido');
+  //     value === 'SI' ? kmControl?.enable() : kmControl?.disable();
+  //   });
+  // }
+
+  crearActividad(): FormGroup {
+    return this.fb.group({
+      hora: ['', [Validators.required, horaLaboralValidator]],
+      domicilio: [''],
+      actividad: [''],
+      codigo: [''],
+      acordeObjetivo: [false],
+      traslado: ['', Validators.required],
+      // kmRecorrido: ['']
+    });
+
+  }
+
+
+  get actividades(): FormArray {
+    return this.registrarAgenda.get('actividades') as FormArray;
+  }
+
+  agregarActividad(): void {
+    this.actividades.push(this.crearActividad());
+  }
+
+  eliminarActividad(index: number): void {
+    this.actividades.removeAt(index);
+  }
+
+  // CRUD operations
+  RegistrarAgenda(): void {
+    if (this.registrarAgenda.invalid) {
+      this.showToast('error', 'Por favor, revisa los campos obligatorios del formulario.');
+      return;
+    }
+
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: '¿Deseas registrar esta(s) actividad(es)?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, registrar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.saveAgenda();
+      }
+    });
+  }
+
+  private saveAgenda(): void {
+    this.loading = true;
+    const datos = this.registrarAgenda.value;
+    const requests = this.actividades.value.map((actividad: any) => {
+      const agenda: Agenda = {
+        coordinador: datos.coordinador,
+        semana: datos.semana,
+        fecha: datos.fecha,
+        objetivo: datos.objetivo,
+        meta: datos.meta,
+        cumplimientoAgenda: datos.cumplimientoAgenda,
+        ...actividad
+      };
+
+      return this._coordinacionService.registrarAgenda(agenda);
+    });
+
+    Promise.all(requests.map((req: { toPromise: () => any; }) => req.toPromise()))
+      .then(() => {
+        this.showToast('success', 'Actividades registradas con éxito');
+        this.refrescarAgendas();
+        this.actividades.clear();
+        this.actividades.push(this.crearActividad());
+      })
+      .catch(error => {
+        console.error('Error al registrar agenda:', error);
+        this.showToast('error', 'Error al registrar las actividades');
+      })
+      .finally(() => {
+        this.loading = false;
+      });
+  }
+
+
+  seleccionarCoordinador(coord: Coordinacion | null): void {
+    this.selectedCoord = coord;
+
+    if (coord?.coordinador) {
+      this.registrarAgenda.get('coordinador')?.setValue(coord.coordinador);
+    } else {
+      this.registrarAgenda.get('coordinador')?.setValue('');
+    }
+  }
+
+
+  refrescarAgendas(): void {
+    this._coordinacionService.obtenerAgendas().subscribe(data => {
+      this.agendas = data.map((agenda: { fecha: string; }) => ({
+        ...agenda,
+        fecha: this.fixUTCDateToLocal(agenda.fecha)
+      }));
+    });
+  }
+
+
+  opcionesCodigo = [
+    { value: 'AG', texto: 'AG | Aseo General', color: '#fdff9dff' },
+    { value: 'GA', texto: 'GA | Gestión Administrativa', color: '#d7ff60ff' },
+    { value: 'C', texto: 'C | Cobranza', color: '#00ff9dff' },
+    { value: 'D', texto: 'D | Domiciliar', color: '#bcfff5ff' },
+    { value: 'Dep', texto: 'Dep | Depósitar', color: '#b300ffff' },
+    { value: 'E', texto: 'E | Entregas', color: '#00ffe5ff' },
+    { value: 'GN', texto: 'GN | Grupo Nuevo', color: '#79afffff' },
+    { value: 'INT', texto: 'INT | Integración', color: '#00d9ffff' },
+    { value: 'R', texto: 'R | Pago', color: '#ff006fff' },
+    { value: 'R/A', texto: 'R/A | Realizando Agendas', color: '#75a8ffff' },
+    { value: 'RM', texto: 'RM | Reunión Mensual', color: '#ff0400ff' },
+    { value: 'RS', texto: 'RS | Reunión Semanal', color: '#4dff00ff' },
+    { value: 'VTA', texto: 'VTA | Promoción', color: '#00ddffff' },
+    { value: 'Sup', texto: 'Sup | Supervisión', color: '#00c8ffff' },
+    { value: 'S/Renov', texto: 'S/Renov | Sup.Renovación', color: '#2d00a0ff' },
+    { value: 'Sin Codigo', texto: 'Sin código', color: '#ff93d9ff' },
+    { value: '', texto: 'Actividades sin código', color: '#ffacccff' }
+  ];
+
+
+  // Helper para notificaciones
+  private showToast(icon: 'success' | 'error', title: string): void {
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.onmouseenter = Swal.stopTimer;
+        toast.onmouseleave = Swal.resumeTimer;
+      }
+    });
+
+    Toast.fire({ icon, title });
+  }
+
+  onCodeChange(event: any, index: number, codigo: string) {
+    const isChecked = event.target.checked;
+    const actividad = this.actividades.at(index);
+
+    let selected = actividad.get('codigo')?.value ? actividad.get('codigo')?.value.split(',') : [];
+
+    if (isChecked) {
+      if (!selected.includes(codigo)) {
+        selected.push(codigo);
+      }
+    } else {
+      selected = selected.filter((c: string) => c !== codigo);
+    }
+
+    actividad.get('codigo')?.setValue(selected.join(','));
+  }
+
+  isCodeSelected(index: number, code: string): boolean {
+    const actividad = this.actividades.at(index);
+    const selected = actividad.get('codigo')?.value ? actividad.get('codigo')?.value.split(',') : [];
+    return selected.includes(code);
+  }
+
+  objetivosDisponibles: string[] = [
+    'Reducir mora',
+    'Grupos nuevos',
+    'Clientes nuevos',
+    'Cierre de fichas',
+    'Renovación de lo proyectado'
+  ];
+
+  onObjetivoToggle(event: any, objetivo: string) {
+    const isChecked = event.target.checked;
+
+    if (isChecked) {
+      if (!this.selectedObjetivos.includes(objetivo)) {
+        this.selectedObjetivos.push(objetivo);
+      }
+    } else {
+      this.selectedObjetivos = this.selectedObjetivos.filter(o => o !== objetivo);
+    }
+
+    this.registrarAgenda.get('objetivo')?.setValue(this.selectedObjetivos.join(','));
+  }
+
+  limpiarFormulario(): void {
+    this.registrarAgenda = this.initForm();
+    this.selectedObjetivos = [];
+  }
+}
